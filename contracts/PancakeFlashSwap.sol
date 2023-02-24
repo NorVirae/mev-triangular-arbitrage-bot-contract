@@ -57,10 +57,10 @@ contract PancakeFlashSwap {
 
     // get flashloan from contract
     function startLoan(address _tokenBorrow, uint256 _amount) external {
-        IERC20(BUSD).approve(address(PANCAKEV2_ROUTER), MAX_INT);
-        IERC20(CAKE).approve(address(PANCAKEV2_ROUTER), MAX_INT);
-        IERC20(USDT).approve(address(PANCAKEV2_ROUTER), MAX_INT);
-        IERC20(CROX).approve(address(PANCAKEV2_ROUTER), MAX_INT);
+        IERC20(BUSD).safeApprove(address(PANCAKEV2_ROUTER), MAX_INT);
+        IERC20(CAKE).safeApprove(address(PANCAKEV2_ROUTER), MAX_INT);
+        IERC20(USDT).safeApprove(address(PANCAKEV2_ROUTER), MAX_INT);
+        IERC20(CROX).safeApprove(address(PANCAKEV2_ROUTER), MAX_INT);
 
         // get the factory pair address for combined
         address pair = IUniswapV2Factory(PANCAKEV2_FACTORY).getPair(
@@ -79,6 +79,7 @@ contract PancakeFlashSwap {
         // encode data
         bytes memory data = abi.encode(_tokenBorrow, _amount);
 
+        console.log("SWAP AMOUNTS: amountOut0: %s amountOut1: %s, balance: %s", amountOut0, amountOut1, IERC20(_tokenBorrow).balanceOf(address(this)));
         // call swap
         IUniswapV2Pair(pair).swap(amountOut0, amountOut1, address(this), data);
     }
@@ -116,11 +117,15 @@ contract PancakeFlashSwap {
             "Swap call was not called by this contract"
         );
 
+
         // decode data
         (address _tokenBorrow, uint256 _amount) = abi.decode(
             _data,
             (address, uint256)
         );
+
+        IERC20(_tokenBorrow).safeApprove(pair, MAX_INT);
+
 
         // calculate amount to repay
         uint256 fee = ((_amount * 3) / 997) + 1;
@@ -129,12 +134,8 @@ contract PancakeFlashSwap {
         // Perform arbitrage
 
         // Pay yourself
-        console.log("SOL: check amount %s, balance: %s", amountToRepay,  IERC20(BUSD).balanceOf(address(this)));
+        console.log("SOL: check amount %s, balance: %s", amountToRepay,  IERC20(_tokenBorrow).balanceOf(address(this)));
         // Pay back loan
-        IERC20(_tokenBorrow).transferFrom(
-            address(this),
-            pair,
-            amountToRepay
-        );
+        IERC20(_tokenBorrow).safeTransfer(pair, amountToRepay);
     }
 }

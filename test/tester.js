@@ -47,7 +47,7 @@ describe("FlashSwap Contract", () => {
     FLASHSWAP = await flashSwapFactory.deploy();
     await FLASHSWAP.deployed();
 
-    impersonateFundErc20(
+    await impersonateFundErc20(
       tokenBase,
       BUSD_WHALE,
       FLASHSWAP.address,
@@ -80,6 +80,7 @@ describe("FlashSwap Contract", () => {
     });
 
     it("excutes an arbitrage", async () => {
+      
       txArbitrage = await FLASHSWAP.startLoan(BUSD, BORROW_AMOUNT);
 
       const balanceAfterArbitrage = await FLASHSWAP.getFlashContractBalance(
@@ -89,6 +90,12 @@ describe("FlashSwap Contract", () => {
         balanceAfterArbitrage,
         DECIMALS
       );
+
+
+      const currentBalance = await FLASHSWAP.getFlashContractBalance(
+        BASE_TOKEN_ADDRESS
+      );
+      console.log(ethers.utils.formatUnits(currentBalance, DECIMALS))
       assert(txArbitrage);
     });
   });
