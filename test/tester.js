@@ -37,9 +37,9 @@ describe("FlashSwap Contract", () => {
     const whale_balance = await provider.getBalance(BUSD_WHALE);
     expect(whale_balance).not.equal("0");
 
-    const amountToBorrowInHuman = "10";
+    const amountToBorrowInHuman = "1";
     BORROW_AMOUNT = ethers.utils.parseUnits(amountToBorrowInHuman, DECIMALS);
-    initialFundingHuman = "1000";
+    initialFundingHuman = "10";
     FUND_AMOUNT = ethers.utils.parseUnits(initialFundingHuman, DECIMALS);
     const flashSwapFactory = await ethers.getContractFactory(
       "PancakeFlashSwap"
@@ -95,7 +95,14 @@ describe("FlashSwap Contract", () => {
       const currentBalance = await FLASHSWAP.getFlashContractBalance(
         BASE_TOKEN_ADDRESS
       );
-      console.log(ethers.utils.formatUnits(currentBalance, DECIMALS))
+
+      const currentBalanceCAKE = await FLASHSWAP.getFlashContractBalance(
+        CAKE
+      );
+
+      console.log("BUSD: ", ethers.utils.formatUnits(currentBalance, DECIMALS))
+      console.log("CAKE: ", ethers.utils.formatUnits(currentBalanceCAKE, DECIMALS))
+
       assert(txArbitrage);
     });
   });
