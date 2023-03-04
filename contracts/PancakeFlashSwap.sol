@@ -112,9 +112,56 @@ contract PancakeFlashSwap {
         return (balance0, balance1, balance2, balance3);
     }
 
+    // checks trade profitabilty in order of token provided
+    function checkTriangularTradeProfitabilityOnBlockCall(
+        address _tradeToken1,
+        address _tradeToken2,
+        address _tradeToken3,
+        uint256 _amount
+    ) external view returns (bool) {
+        address[] memory tPath1 = new address[](2);
+        address memory tPath2 = new address[](2);
+        address memory tPath3 = new address[](2);
+        bool startTrade = false;
+
+        // Trade 1 path
+        tPath1[0] = _tradeToken1;
+        tPath1[1] = _tradeToken2;
+
+        // Trade 2 path
+        tPath2[0] = _tradeToken2;
+        tPath2[1] = _tradeToken3;
+
+        // Trade 3 path
+        tPath3[0] = _tradeToken3;
+        tPath3[1] = _tradeToken1;
+
+        uint256 trade1PossibleOutcomeAmount = IUniswapV2Router01(
+            PANCAKEV2_ROUTER
+        ).getAmountsOut(_amount, tPath1)[1];
+        uint256 trade2PossibleOutcomeAmount = IUniswapV2Router01(
+            PANCAKEV2_ROUTER
+        ).getAmountsOut(trade1PossibleOutcomeAmount, tPath2)[1];
+        uint256 trade3PossibleOutcomeAmount = IUniswapV2Router01(
+            PANCAKEV2_ROUTER
+        ).getAmountsOut(trade2PossibleOutcomeAmount, tPath3)[1];
+
+        uint256 fee = ((_amount * 3) / 997) + 1;
+        uint256 amountToRepay = _amount.add(fee);
+
+        if (trade3PossibleOutcomeAmount > amountToRepay) {
+            startTrade = true;
+        }
+        return startTrade;
+    }
+
     // Check profitablity
-    function checkProfitability(uint256 input, uint256 output) public pure returns (bool){
-        bool isOutputBigger = output > input? true: false;
+    function checkProfitability(uint256 input, uint256 output)
+        public
+        pure
+        returns (bool)
+    {
+        bool isOutputBigger = output > input ? true : false;
         return isOutputBigger;
     }
 
@@ -193,11 +240,13 @@ contract PancakeFlashSwap {
         uint256 receivedAmountBUSD = placeTrade(USDT, BUSD, receivedAmountCrox);
 
         // check trade profitablity
-        bool isOutputBigger = checkProfitability(amountToRepay, receivedAmountBUSD);
+        bool isOutputBigger = checkProfitability(
+            amountToRepay,
+            receivedAmountBUSD
+        );
         require(isOutputBigger, "Trade not profitable");
 
-        if(isOutputBigger){
-
+        if (isOutputBigger) {
             IERC20 otherToken = IERC20(BUSD);
             otherToken.transfer(myAddress, receivedAmountBUSD - amountToRepay);
         }
