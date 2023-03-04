@@ -112,8 +112,8 @@ contract PancakeFlashSwap {
         uint256 _amount
     ) external view returns (bool) {
         address[] memory tPath1 = new address[](2);
-        address memory tPath2 = new address[](2);
-        address memory tPath3 = new address[](2);
+        address[] memory tPath2 = new address[](2);
+        address[] memory tPath3 = new address[](2);
         bool startTrade = false;
 
         // Trade 1 path
@@ -172,12 +172,11 @@ contract PancakeFlashSwap {
         address _tokenBaseBorrow, //probably WBNB
         address _trade1TOken,
         address _trade2Token,
-        address _trade3Token,
         uint256 _amount
     ) external {
         IERC20(_trade1TOken).safeApprove(address(PANCAKEV2_ROUTER), MAX_INT);
         IERC20(_trade2Token).safeApprove(address(PANCAKEV2_ROUTER), MAX_INT);
-        IERC20(_trade3Token).safeApprove(address(PANCAKEV2_ROUTER), MAX_INT);
+        IERC20(_tokenBorrow).safeApprove(address(PANCAKEV2_ROUTER), MAX_INT);
 
         // get the factory pair address for combined
         address pair = IUniswapV2Factory(PANCAKEV2_FACTORY).getPair(
@@ -199,8 +198,7 @@ contract PancakeFlashSwap {
             _amount,
             msg.sender,
             _trade1TOken,
-            _trade2Token,
-            _trade3Token
+            _trade2Token
         );
 
         // call swap
@@ -232,11 +230,10 @@ contract PancakeFlashSwap {
             uint256 _amount,
             address myAddress,
             address _tradeToken1,
-            address _tradeToken2,
-            address _tradeToken3
+            address _tradeToken2
         ) = abi.decode(
                 _data,
-                (address, uint256, address, address, address, address)
+                (address, uint256, address, address, address)
             );
 
         // calculate amount to repay
@@ -247,22 +244,16 @@ contract PancakeFlashSwap {
         // get Trade amount
         uint256 tradeAmount = _amount0 > 0 ? _amount0 : _amount1;
 
-        // ensure tradeToken1 is tokenBorrow
-        require(
-            _tradeToken1 == _tokenBorrow,
-            "tokens not parsed in order, first parsed token should equal borrow token"
-        );
-
         // placeTrade
-        uint256 receivedAmountTrade1 = placeTrade(_tradeToken1, _tradeToken2, tradeAmount);
+        uint256 receivedAmountTrade1 = placeTrade(_tokenBorrow, _tradeToken1, tradeAmount);
         uint256 receivedAmountTrade2 = placeTrade(
+            _tradeToken1,
             _tradeToken2,
-            _tradeToken3,
             receivedAmountTrade1
         );
         uint256 receivedAmountTrade3 = placeTrade(
-            _tradeToken3,
-            _tradeToken1,
+            _tradeToken2,
+            _tokenBorrow,
             receivedAmountTrade2
         );
 
